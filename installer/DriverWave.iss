@@ -41,6 +41,7 @@ VersionInfoVersion={#MyAppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+LicenseFile=..\LICENSE
 CloseApplications=yes
 
 [Languages]

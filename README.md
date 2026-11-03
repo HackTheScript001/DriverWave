@@ -2,49 +2,52 @@
 
 **A SecondWave IT Systems product.**
 
-Finds and installs missing drivers after a fresh Windows install.
+Drivers, cleanup and maintenance for Windows PCs – built for the first hour after a fresh install.
 
-Run it on a newly installed PC and it will:
+## What it does
 
-1. **Scan your hardware** – every device Windows can see, flagging ones with no driver
-   (Device Manager's yellow triangles) or running on a basic Microsoft fallback driver.
-2. **Get you online if needed** – if the network adapter has no driver, it installs one from
-   the built-in pack of common Ethernet and Wi-Fi drivers.
-3. **Find the right drivers on Windows Update** – the same signed drivers Microsoft publishes
-   for your exact hardware IDs, matched device by device.
-4. **Install them** – after making a System Restore point, so you can roll back.
+### Drivers
+- **Missing drivers** – scans every device Windows can see, flags ones with no driver
+  (Device Manager's yellow triangles) or on a basic fallback driver, and installs the right
+  signed driver from Windows Update. If the PC has no internet because the network adapter
+  has no driver, it installs one from the built-in Ethernet/Wi-Fi pack first.
+- **Graphics card** – the latest driver straight from the manufacturer: NVIDIA drivers are
+  looked up and installed silently; AMD and Intel run their official auto-detect tools.
+- **Driver backup** – saves every installed driver to a folder or USB stick before a reinstall,
+  and puts them all back afterwards with no internet needed.
 
-Newer drivers for devices that already work are listed too, unticked by default.
+### Tools
+- **Uninstaller** – runs a program's own uninstaller, then finds the folders, shortcuts and
+  registry keys it left behind. Registry keys are backed up and files go to the Recycle Bin.
+- **System cleanup** – temp files, Windows Update leftovers, crash dumps, thumbnail and shader
+  caches, browser caches and the Recycle Bin.
+- **Registry cleaner** – deliberately cautious: only entries that point at programs or files
+  that definitely no longer exist. Every change is backed up and can be restored.
+- **Startup programs** – turn programs off so Windows starts faster (the same switch Task Manager uses).
+
+A System Restore point is made before drivers are installed, programs are uninstalled or the
+registry is changed.
 
 ## Download
 
 Get the latest `DriverWave-x.y.z-Setup.exe` from
 [Releases](https://github.com/HackTheScript001/DriverWave/releases/latest).
-It needs Windows 10 or 11 (64-bit) and admin rights. Nothing else is required –
-.NET is built into the app.
+It needs Windows 10 or 11 (64-bit) and admin rights. Nothing else is required.
 
-DriverWave updates itself: when a new version is out, an **Update now** button appears
-at the top of the window.
+DriverWave updates itself: when a new version is out, an **Update now** button appears in the app.
 
 ## Beta
 
-DriverWave is in beta and free to try. Found a device it couldn't sort, or a bug?
+DriverWave is in beta and free to use. Found a bug or a device it couldn't sort?
 [Open an issue](https://github.com/HackTheScript001/DriverWave/issues) and attach
 `C:\ProgramData\DriverWave\DriverWave.log`.
 
-## How it works
+Backups of anything DriverWave changes are kept in `C:\ProgramData\DriverWave\Backups`.
 
-| Part | File |
-| --- | --- |
-| Hardware scan (WMI `Win32_PnPEntity`) | `src/DriverWave/Services/HardwareScanner.cs` |
-| Windows Update driver search/download/install (Windows Update Agent API) | `src/DriverWave/Services/WindowsUpdateDrivers.cs` |
-| Bundled network drivers (`pnputil /add-driver … /install`) | `src/DriverWave/Services/OfflineDriverPack.cs` |
-| Restore point | `src/DriverWave/Services/RestorePoint.cs` |
-| In-app updates from GitHub Releases | `src/DriverWave/Services/Updater.cs` |
-| Installer (Inno Setup) | `installer/DriverWave.iss` |
-| Build + release pipeline | `.github/workflows/release.yml` |
+## Licence
 
-Every push to `main` builds a new installer and publishes it as release `v1.0.<build number>`.
+DriverWave is free to use but is not open source. See [LICENSE](LICENSE).
+Drivers it downloads belong to Microsoft, NVIDIA, AMD and Intel and are covered by their own licences.
 
 ---
 

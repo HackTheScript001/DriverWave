@@ -3,13 +3,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
   <Application.Resources>
+    <!-- SecondWave IT Systems colours -->
     <SolidColorBrush x:Key="Blue" Color="#1E6FD9"/>
+    <SolidColorBrush x:Key="BlueSoft" Color="#EAF2FD"/>
     <SolidColorBrush x:Key="Green" Color="#3BB273"/>
     <SolidColorBrush x:Key="Grey" Color="#6B7280"/>
     <SolidColorBrush x:Key="Ink" Color="#111827"/>
     <SolidColorBrush x:Key="Line" Color="#E5E7EB"/>
     <SolidColorBrush x:Key="Panel" Color="#F7F9FC"/>
+    <SolidColorBrush x:Key="Warn" Color="#C2410C"/>
+    <SolidColorBrush x:Key="Bad" Color="#B91C1C"/>
+    <SolidColorBrush x:Key="Good" Color="#15803D"/>
 
+    <!-- Buttons -->
     <Style x:Key="PrimaryButton" TargetType="Button">
       <Setter Property="Background" Value="{StaticResource Blue}"/>
       <Setter Property="Foreground" Value="White"/>
@@ -41,8 +47,11 @@
       <Setter Property="Background" Value="{StaticResource Green}"/>
     </Style>
 
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+      <Setter Property="Background" Value="{StaticResource Bad}"/>
+    </Style>
+
     <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-      <Setter Property="Background" Value="White"/>
       <Setter Property="Foreground" Value="{StaticResource Ink}"/>
       <Setter Property="Template">
         <Setter.Value>
@@ -62,5 +71,127 @@
         </Setter.Value>
       </Setter>
     </Style>
+
+    <!-- Sidebar navigation item -->
+    <Style x:Key="NavItem" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="Margin" Value="0,2"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="12,9">
+              <DockPanel>
+                <Border x:Name="bar" Width="3" CornerRadius="2" Background="Transparent" Margin="-12,0,9,0" DockPanel.Dock="Left"/>
+                <ContentPresenter VerticalAlignment="Center"/>
+              </DockPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="b" Property="Background" Value="#EEF2F7"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="b" Property="Background" Value="{StaticResource BlueSoft}"/>
+                <Setter TargetName="bar" Property="Background" Value="{StaticResource Blue}"/>
+                <Setter Property="Foreground" Value="{StaticResource Blue}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Page headings -->
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="20"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+    </Style>
+    <Style x:Key="PageSub" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Grey}"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Margin" Value="0,4,0,0"/>
+    </Style>
+
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="{StaticResource Panel}"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,12"/>
+    </Style>
+
+    <Style x:Key="BusyBarStyle" TargetType="ProgressBar">
+      <Setter Property="Height" Value="6"/>
+      <Setter Property="Foreground" Value="{StaticResource Blue}"/>
+      <Setter Property="Background" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Visibility" Value="Hidden"/>
+    </Style>
+
+    <!-- Every results table in the app -->
+    <Style TargetType="DataGrid">
+      <Setter Property="AutoGenerateColumns" Value="False"/>
+      <Setter Property="CanUserAddRows" Value="False"/>
+      <Setter Property="CanUserDeleteRows" Value="False"/>
+      <Setter Property="HeadersVisibility" Value="Column"/>
+      <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+      <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="RowBackground" Value="White"/>
+      <Setter Property="SelectionMode" Value="Single"/>
+      <Setter Property="SelectionUnit" Value="FullRow"/>
+      <Setter Property="RowHeight" Value="44"/>
+      <Setter Property="ColumnHeaderHeight" Value="34"/>
+      <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+      <Setter Property="ColumnHeaderStyle">
+        <Setter.Value>
+          <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{StaticResource Panel}"/>
+            <Setter Property="Foreground" Value="{StaticResource Grey}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+          </Style>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="CellStyle">
+        <Setter.Value>
+          <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            <Setter Property="Template">
+              <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                  <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                    <ContentPresenter VerticalAlignment="Center"/>
+                  </Border>
+                </ControlTemplate>
+              </Setter.Value>
+            </Setter>
+          </Style>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="RowStyle">
+        <Setter.Value>
+          <Style TargetType="DataGridRow">
+            <Style.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource BlueSoft}"/>
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Checkbox column used by every list -->
+    <DataTemplate x:Key="SelectCell">
+      <CheckBox IsChecked="{Binding Selected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" HorizontalAlignment="Center"/>
+    </DataTemplate>
   </Application.Resources>
 </Application>

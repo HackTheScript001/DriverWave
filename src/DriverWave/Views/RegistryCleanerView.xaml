@@ -1,0 +1,59 @@
+<UserControl x:Class="DriverWave.Views.RegistryCleanerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Margin="24,18,24,8">
+      <TextBlock Text="Registry cleaner" Style="{StaticResource PageTitle}"/>
+      <TextBlock Style="{StaticResource PageSub}"
+                 Text="Finds registry entries that point at programs and files that no longer exist. It's deliberately cautious – it won't touch anything it can't be sure about, and every change is backed up first."/>
+    </StackPanel>
+
+    <Border Grid.Row="1" Style="{StaticResource Card}" Background="#FFF7E6" Margin="24,4,24,10">
+      <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Ink}"
+                 Text="Cleaning the registry won't make Windows noticeably faster – it just tidies up after deleted programs. If something stops working afterwards, use Restore a backup."/>
+    </Border>
+
+    <Grid Grid.Row="2" Margin="24,0,24,6">
+      <DataGrid x:Name="IssueGrid">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn Width="44" CellTemplate="{StaticResource SelectCell}"/>
+          <DataGridTextColumn Header="Problem" Binding="{Binding Issue.Category, Mode=OneWay}" Width="170" IsReadOnly="True"/>
+          <DataGridTemplateColumn Header="Details" Width="3*">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <TextBlock Text="{Binding Issue.Description}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Issue.Target}"/>
+                  <TextBlock Text="{Binding Issue.Location}" Foreground="{StaticResource Grey}" FontSize="11.5" TextTrimming="CharacterEllipsis" ToolTip="{Binding Issue.Location}"/>
+                </StackPanel>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" Width="110" IsReadOnly="True"/>
+        </DataGrid.Columns>
+      </DataGrid>
+      <TextBlock x:Name="EmptyText" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource Grey}" FontSize="15"
+                 Text="Click Scan to look for problems." TextWrapping="Wrap" TextAlignment="Center" MaxWidth="460"/>
+    </Grid>
+
+    <Border Grid.Row="3" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="24,12">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button x:Name="RestoreButton" Content="Restore a backup" Style="{StaticResource GhostButton}" Click="OnRestore"/>
+          <Button x:Name="ScanButton" Content="Scan" Style="{StaticResource GhostButton}" Click="OnScan"/>
+          <Button x:Name="FixButton" Content="Fix selected" Style="{StaticResource PrimaryButton}" Click="OnFix" IsEnabled="False"/>
+        </StackPanel>
+        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+          <TextBlock x:Name="StatusText" Text="Ready" TextTrimming="CharacterEllipsis"/>
+          <ProgressBar x:Name="BusyBar" Style="{StaticResource BusyBarStyle}" Margin="0,8,0,0" IsIndeterminate="True"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>
