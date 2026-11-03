@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <AssemblyName>DriverWave</AssemblyName>
+    <RootNamespace>DriverWave</RootNamespace>
+    <Product>DriverWave</Product>
+    <Company>SecondWave IT Systems</Company>
+    <Authors>Liam Mayes</Authors>
+    <Description>Finds and installs missing Windows drivers after a fresh install.</Description>
+    <Copyright>© SecondWave IT Systems</Copyright>
+
+    <!-- CI overrides this with -p:Version=1.0.<run number> -->
+    <Version>1.0.0</Version>
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\DriverWave.ico</ApplicationIcon>
+
+    <!-- Fresh Windows installs have no .NET runtime, so ship it inside the exe -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DriverWave.ico" />
+    <Resource Include="Assets\DriverWave.png" />
+  </ItemGroup>
+
+</Project>
