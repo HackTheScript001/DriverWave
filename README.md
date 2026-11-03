@@ -1,5 +1,7 @@
 # DriverWave
 
+**A SecondWave IT Systems product.**
+
 Finds and installs missing drivers after a fresh Windows install.
 
 Run it on a newly installed PC and it will:
@@ -43,3 +45,8 @@ DriverWave is in beta and free to try. Found a device it couldn't sort, or a bug
 | Build + release pipeline | `.github/workflows/release.yml` |
 
 Every push to `main` builds a new installer and publishes it as release `v1.0.<build number>`.
+
+---
+
+DriverWave is owned and developed by **SecondWave IT Systems** (Bedford & Central Bedfordshire).
+Contact: liam@secondwaveitsystems.cloud

@@ -18,7 +18,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ResultsGrid.ItemsSource = _items;
-        VersionText.Text = $"v{AppInfo.VersionText}";
+        VersionText.Text = $"v{AppInfo.VersionText}  ·  © {DateTime.Now.Year} SecondWave IT Systems";
         Log.LineWritten += line => Dispatcher.InvokeAsync(() =>
         {
             LogBox.AppendText(line + Environment.NewLine);

@@ -1,7 +1,7 @@
 <Window x:Class="DriverWave.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DriverWave" Width="1040" Height="700" MinWidth="820" MinHeight="520"
+        Title="DriverWave – SecondWave IT Systems" Width="1040" Height="700" MinWidth="820" MinHeight="520"
         WindowStartupLocation="CenterScreen" Background="White"
         Icon="Assets/DriverWave.ico" FontFamily="Segoe UI" FontSize="13"
         Loaded="OnLoaded">
@@ -20,15 +20,29 @@
     <!-- Header -->
     <Border Grid.Row="0" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="24,16">
       <DockPanel>
-        <Image Source="Assets/DriverWave.png" Width="40" Height="40" Margin="0,0,12,0" DockPanel.Dock="Left"/>
+        <!-- SecondWave IT Systems logo + wordmark -->
+        <Image Source="Assets/SecondWave.png" Width="56" Height="56" Margin="0,0,10,0" DockPanel.Dock="Left"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
         <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
-          <TextBlock FontSize="22" FontWeight="Bold">
-            <Run Text="Driver" Foreground="{StaticResource Blue}"/><Run Text="Wave" Foreground="{StaticResource Green}"/>
+          <TextBlock FontSize="22" FontWeight="Bold" LineHeight="24">
+            <Run Text="Second" Foreground="{StaticResource Blue}"/><Run Text="Wave" Foreground="{StaticResource Green}"/>
           </TextBlock>
+          <TextBlock Text="I T   S Y S T E M S" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Grey}"/>
+        </StackPanel>
+
+        <Border DockPanel.Dock="Left" Width="1" Background="{StaticResource Line}" Margin="22,4"/>
+
+        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+          <TextBlock Text="DriverWave" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource Ink}"/>
           <TextBlock Text="Finds and installs missing drivers from Windows Update" Foreground="{StaticResource Grey}"/>
         </StackPanel>
-        <TextBlock x:Name="VersionText" DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right"
-                   Foreground="{StaticResource Grey}"/>
+
+        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right">
+          <TextBlock HorizontalAlignment="Right" Foreground="{StaticResource Grey}">
+            <Run Text="A "/><Run Text="Second" Foreground="{StaticResource Blue}" FontWeight="SemiBold"/><Run Text="Wave" Foreground="{StaticResource Green}" FontWeight="SemiBold"/><Run Text=" IT Systems product"/>
+          </TextBlock>
+          <TextBlock x:Name="VersionText" HorizontalAlignment="Right" Foreground="{StaticResource Grey}" FontSize="11.5"/>
+        </StackPanel>
       </DockPanel>
     </Border>
 
