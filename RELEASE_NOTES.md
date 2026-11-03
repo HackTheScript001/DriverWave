@@ -1,3 +1,6 @@
+What's new in 1.1.5
+- The installer now says SecondWave IT Systems in its window title, welcome and finish pages.
+
 What's new in 1.1.4
 - Graphics card: while NVIDIA's installer runs, DriverWave now shows what it's doing (unpacking or installing), a running timer and a moving progress bar, so a long install no longer looks stuck. NVIDIA's own install logs are kept for troubleshooting.
 - DriverWave asks before closing if it's still in the middle of installing or removing something.

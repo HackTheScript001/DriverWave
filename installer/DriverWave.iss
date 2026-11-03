@@ -18,7 +18,7 @@ AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL=https://secondwaveitsystems.cloud
-AppCopyright=© SecondWave IT Systems
+AppCopyright=© SecondWave IT Systems. All rights reserved.
 AppContact=liam@secondwaveitsystems.cloud
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoCopyright=© SecondWave IT Systems
@@ -48,7 +48,9 @@ CloseApplications=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-WelcomeLabel2=This will install [name/ver] on your computer.%n%nDriverWave is a SecondWave IT Systems product. It finds the drivers your PC is missing and installs them from Windows Update.%n%nIt is recommended that you close all other applications before continuing.
+SetupWindowTitle=%1 Setup - SecondWave IT Systems
+FinishedLabel=Setup has finished installing [name] on your computer.%n%nDriverWave is a SecondWave IT Systems product. Thanks for using it.
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nDriverWave is a SecondWave IT Systems product. It finds and installs the drivers your PC is missing, and includes cleanup and maintenance tools.%n%nIt is recommended that you close all other applications before continuing.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"

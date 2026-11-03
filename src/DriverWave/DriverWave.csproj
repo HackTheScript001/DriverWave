@@ -17,7 +17,7 @@
     <Copyright>© SecondWave IT Systems. DriverWave is a SecondWave IT Systems product.</Copyright>
 
     <!-- To release an update: bump this, add a "What's new in x.y.z" section to RELEASE_NOTES.md, push -->
-    <Version>1.1.4</Version>
+    <Version>1.1.5</Version>
 
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\DriverWave.ico</ApplicationIcon>
