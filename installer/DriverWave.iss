@@ -1,4 +1,4 @@
-; DriverWave installer (Inno Setup 6)
+﻿; DriverWave installer (Inno Setup 6)
 ; Built by GitHub Actions: iscc /DMyAppVersion=1.0.N installer\DriverWave.iss
 
 #ifndef MyAppVersion
@@ -17,7 +17,12 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
+AppPublisherURL=https://secondwaveitsystems.cloud
+AppCopyright=© SecondWave IT Systems
+AppContact=liam@secondwaveitsystems.cloud
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoCopyright=© SecondWave IT Systems
+VersionInfoDescription=DriverWave – a SecondWave IT Systems product
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
@@ -41,6 +46,9 @@ CloseApplications=yes
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Messages]
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nDriverWave is a SecondWave IT Systems product. It finds the drivers your PC is missing and installs them from Windows Update.%n%nIt is recommended that you close all other applications before continuing.
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
@@ -55,9 +63,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: deskto
 
 [Run]
 ; Normal install: offer to launch at the end
-Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent shellexec
 ; Silent in-app update: relaunch automatically
-Filename: "{app}\{#MyAppExe}"; Flags: nowait; Check: WizardSilent
+Filename: "{app}\{#MyAppExe}"; Flags: nowait shellexec; Check: WizardSilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\OfflineDrivers"
