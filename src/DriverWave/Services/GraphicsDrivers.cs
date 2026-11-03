@@ -126,29 +126,196 @@ public static class GraphicsDrivers
     private static string NormaliseName(string s) =>
         Regex.Replace(s.Replace("NVIDIA", "", StringComparison.OrdinalIgnoreCase), @"\s+", " ").Trim();
 
+    /// <summary>
+    /// The names NVIDIA's product list might use for a card: Windows says "GeForce GTX 1060 6GB",
+    /// NVIDIA's list may just say "GeForce GTX 1060"; laptops may or may not say "Laptop GPU" / "with Max-Q Design".
+    /// </summary>
+    private static List<string> NameVariants(string gpuName)
+    {
+        var n = NormaliseName(gpuName);
+        var list = new List<string> { n };
+        var noMem = Regex.Replace(n, @"\s*\d+\s*GB$", "", RegexOptions.IgnoreCase).Trim();
+        list.Add(noMem);
+        foreach (var b in new[] { n, noMem })
+        {
+            list.Add(Regex.Replace(b, @"\s*(Laptop GPU|with Max-Q Design|Max-Q)$", "", RegexOptions.IgnoreCase).Trim());
+            if (!b.Contains("Laptop", StringComparison.OrdinalIgnoreCase) && IsLaptop) list.Add(b + " Laptop GPU");
+        }
+        return list.Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     /// <summary>Finds NVIDIA's product (pfid) and series (psid) IDs for a card name like "NVIDIA GeForce RTX 4070".</summary>
     private static async Task<(string Psid, string Pfid)?> FindNvidiaProductAsync(string gpuName)
     {
-        var wanted = NormaliseName(gpuName);
-        bool Same(LookupValue v) => string.Equals(NormaliseName(v.Name), wanted, StringComparison.OrdinalIgnoreCase);
+        var wanted = NameVariants(gpuName);
+        LookupValue? Best(List<LookupValue> values)
+        {
+            // Try the most specific name first
+            foreach (var w in wanted)
+            {
+                var m = values.FirstOrDefault(v => string.Equals(NormaliseName(v.Name), w, StringComparison.OrdinalIgnoreCase));
+                if (m != null) return m;
+            }
+            return null;
+        }
 
         // Fast path: the full product list
-        var match = (await NvidiaLookupAsync(3)).FirstOrDefault(Same);
-        if (match != null) return (match.ParentId, match.Value);
+        var match = Best(await NvidiaLookupAsync(3));
+        if (match != null && match.ParentId.Length > 0) return (match.ParentId, match.Value);
 
         // Slow path: walk product types → series → products
         foreach (var type in await NvidiaLookupAsync(1))
         {
             foreach (var series in await NvidiaLookupAsync(2, type.Value))
             {
-                match = (await NvidiaLookupAsync(3, series.Value)).FirstOrDefault(Same);
+                match = Best(await NvidiaLookupAsync(3, series.Value));
                 if (match != null) return (series.Value, match.Value);
             }
         }
         return null;
     }
 
-    public static async Task<NvidiaDriver?> FindLatestNvidiaAsync(string gpuName)
+    /// <summary>True on laptops – NVIDIA ships different driver packages for notebooks.</summary>
+    public static bool IsLaptop { get; } = DetectLaptop();
+
+    private static bool DetectLaptop()
+    {
+        try
+        {
+            using var s = new ManagementObjectSearcher("SELECT ChassisTypes FROM Win32_SystemEnclosure");
+            foreach (ManagementObject mo in s.Get())
+            {
+                using (mo)
+                {
+                    if (mo["ChassisTypes"] is ushort[] types &&
+                        types.Any(t => t is 8 or 9 or 10 or 11 or 12 or 14 or 18 or 21 or 30 or 31 or 32))
+                        return true;
+                }
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    /// <summary>"PCI\VEN_10DE&amp;DEV_1C03&amp;SUBSYS_…" → "1C03_10DE", the form NVIDIA's lookup expects.</summary>
+    public static string? NvidiaDeviceId(string pnpId)
+    {
+        var m = Regex.Match(pnpId, @"VEN_([0-9A-F]{4}).*?DEV_([0-9A-F]{4})", RegexOptions.IgnoreCase);
+        return m.Success ? $"{m.Groups[2].Value.ToUpperInvariant()}_{m.Groups[1].Value.ToUpperInvariant()}" : null;
+    }
+
+    /// <summary>
+    /// Asks NVIDIA for the driver that matches this exact card, by hardware ID – the same lookup the
+    /// NVIDIA app uses. Works even before a driver is installed, because it doesn't need the card's name.
+    /// </summary>
+    private static async Task<NvidiaDriver?> FindByDeviceIdAsync(GpuInfo gpu)
+    {
+        var devId = NvidiaDeviceId(gpu.PnpId);
+        if (devId == null) return null;
+
+        var os = Environment.OSVersion.Version;
+        var query = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["dIDa"] = new[] { devId },
+            ["osC"] = $"{os.Major}.{os.Minor}",
+            ["osB"] = os.Build.ToString(),
+            ["is6"] = Environment.Is64BitOperatingSystem ? "1" : "0",
+            ["lg"] = "1033",
+            ["iLp"] = IsLaptop ? "1" : "0",
+            ["prvMd"] = "0",
+            ["gcV"] = "3.18.0.94",
+            ["gIsB"] = "0",
+            ["dch"] = "1",
+            ["upCRD"] = "0",
+            ["isCRD"] = "0",
+        });
+        const string endpoint = "https://gfwsl.geforce.com/nvidia_web_services/controller.gfeclientcontent.NG.php/com.nvidia.services.GFEClientContent_NG.getDispDrvrByDevid/";
+
+        // The JSON goes in the URL path. Send it as-is first (like NVIDIA's own app), then percent-encoded.
+        var attempts = new Func<Uri>[]
+        {
+            () => new Uri(endpoint + query, new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true }),
+            () => new Uri(endpoint + Uri.EscapeDataString(query)),
+        };
+
+        foreach (var makeUri in attempts)
+        {
+            try
+            {
+                var uri = makeUri();
+                using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+                req.Headers.UserAgent.Clear();
+                req.Headers.UserAgent.ParseAdd("NvBackend/36.0.0.0");
+                using var resp = await Http.SendAsync(req);
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    Log.Write($"NVIDIA has no driver listed for device {devId}");
+                    continue;
+                }
+                if (!resp.IsSuccessStatusCode)
+                {
+                    Log.Write($"NVIDIA device lookup returned {(int)resp.StatusCode}");
+                    continue;
+                }
+
+                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                if (!TryFind(doc.RootElement, "DriverAttributes", out var attrs)) continue;
+
+                string Get(string name) => attrs.TryGetProperty(name, out var v) ? v.ToString() : "";
+                var url = Get("DownloadURLAdmin");
+                if (url.Length == 0) url = Get("DownloadURL");
+                var version = Get("Version");
+                if (url.Length == 0 || version.Length == 0) continue;
+
+                var driver = new NvidiaDriver(version, $"GeForce driver {version}", url, 0);
+                Log.Write($"NVIDIA latest for {gpu.Name} ({devId}): {driver.Version} ({driver.DownloadUrl})");
+                return driver;
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"NVIDIA device lookup failed: {ex.Message}");
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Finds a property anywhere in the JSON (NVIDIA has wrapped this response differently over time).</summary>
+    private static bool TryFind(JsonElement e, string name, out JsonElement found)
+    {
+        if (e.ValueKind == JsonValueKind.Object)
+        {
+            if (e.TryGetProperty(name, out found)) return true;
+            foreach (var p in e.EnumerateObject())
+                if (TryFind(p.Value, name, out found)) return true;
+        }
+        else if (e.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in e.EnumerateArray())
+                if (TryFind(item, name, out found)) return true;
+        }
+        found = default;
+        return false;
+    }
+
+    /// <summary>The latest NVIDIA driver for this card: by hardware ID first, then by name on NVIDIA's driver site.</summary>
+    public static async Task<NvidiaDriver?> FindLatestNvidiaAsync(GpuInfo gpu)
+    {
+        var byDevice = await FindByDeviceIdAsync(gpu);
+        if (byDevice != null) return byDevice;
+        if (gpu.OnBasicDriver) return null; // no name to search by yet
+
+        try
+        {
+            return await FindByNameAsync(gpu.Name);
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"NVIDIA name lookup failed: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static async Task<NvidiaDriver?> FindByNameAsync(string gpuName)
     {
         var ids = await FindNvidiaProductAsync(gpuName);
         if (ids == null)
@@ -175,7 +342,7 @@ public static class GraphicsDrivers
             size = (long)(n * (m.Groups[2].Value.Equals("GB", StringComparison.OrdinalIgnoreCase) ? 1024d * 1024 * 1024 : 1024d * 1024));
 
         var driver = new NvidiaDriver(Get("Version"), Uri.UnescapeDataString(Get("Name")), Get("DownloadURL"), size);
-        Log.Write($"NVIDIA latest for {gpuName}: {driver.Version} ({driver.DownloadUrl})");
+        Log.Write($"NVIDIA latest for {gpuName} (by name): {driver.Version} ({driver.DownloadUrl})");
         return string.IsNullOrEmpty(driver.DownloadUrl) ? null : driver;
     }
 

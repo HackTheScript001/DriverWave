@@ -104,19 +104,12 @@ public partial class GraphicsView : UserControl
         switch (item.Gpu.Vendor)
         {
             case GpuVendor.Nvidia:
-                if (item.Gpu.OnBasicDriver)
-                {
-                    item.LatestText = "Install the driver from Missing drivers first so the exact model can be identified,";
-                    item.Status = "then come back here for NVIDIA's latest driver.";
-                    item.ActionText = "Install latest driver";
-                    item.CanAct = false;
-                    return;
-                }
-
                 item.LatestText = "Latest from NVIDIA: checking…";
+                item.ActionText = "Install latest driver";
+                item.CanAct = false;
                 try
                 {
-                    item.Latest = await GraphicsDrivers.FindLatestNvidiaAsync(item.Gpu.Name);
+                    item.Latest = await GraphicsDrivers.FindLatestNvidiaAsync(item.Gpu);
                 }
                 catch (Exception ex)
                 {
@@ -125,14 +118,12 @@ public partial class GraphicsView : UserControl
 
                 if (item.Latest == null)
                 {
-                    item.LatestText = "Latest from NVIDIA: couldn't look it up automatically";
-                    item.ActionText = "Install latest driver";
-                    item.CanAct = false;
-                    item.Status = "Use \"Open manufacturer's page\" to download it from NVIDIA.";
+                    item.LatestText = "Latest from NVIDIA: couldn't reach NVIDIA's driver service";
+                    item.Status = "Check the internet connection and click Check again, or use \"Open manufacturer's page\". Details below.";
                     return;
                 }
 
-                var installed = GraphicsDrivers.NvidiaFriendlyVersion(item.Gpu.DriverVersion);
+                var installed = item.Gpu.OnBasicDriver ? "0" : GraphicsDrivers.NvidiaFriendlyVersion(item.Gpu.DriverVersion);
                 var newer = GraphicsDrivers.IsNewer(item.Latest.Version, installed);
                 item.LatestText = $"Latest from NVIDIA: {item.Latest.Version}" +
                                   (item.Latest.Size > 0 ? $"  ·  {SystemTools.FormatSize(item.Latest.Size)}" : "");
