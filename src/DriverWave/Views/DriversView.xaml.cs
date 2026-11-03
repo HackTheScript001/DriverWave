@@ -333,6 +333,7 @@ public partial class DriversView : UserControl
             UseShellExecute = false,
             CreateNoWindow = true,
         });
+        AppState.ShuttingDown = true;
         Application.Current.Shutdown();
     }
 

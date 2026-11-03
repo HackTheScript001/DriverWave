@@ -356,12 +356,36 @@ public static class GraphicsDrivers
         status($"Downloading NVIDIA {driver.Version}…");
         await DownloadAsync(driver.DownloadUrl, file, progress);
 
-        status($"Installing NVIDIA {driver.Version} – the screen may flicker…");
-        Log.Write($"Running {file} -s -noreboot -noeula");
-        var psi = new ProcessStartInfo(file, "-s -noreboot -noeula") { UseShellExecute = false, CreateNoWindow = true };
+        progress?.Report(-1); // no percentage from here on – show a busy bar
+        var logDir = Path.Combine(AppInfo.DataFolder, "NVIDIA-install-logs");
+        Directory.CreateDirectory(logDir);
+        var args = $"-s -noreboot -noeula -log:\"{logDir}\" -loglevel:4";
+        Log.Write($"Running {Path.GetFileName(file)} {args}");
+        var psi = new ProcessStartInfo(file, args) { UseShellExecute = false, CreateNoWindow = true };
         using var p = Process.Start(psi) ?? throw new InvalidOperationException("Couldn't start the NVIDIA installer");
-        await p.WaitForExitAsync();
-        Log.Write($"NVIDIA installer exited with {p.ExitCode}");
+
+        // NVIDIA's silent install shows nothing, so report what's happening and how long it's been going
+        var started = DateTime.Now;
+        var lastPhase = "";
+        while (!p.HasExited)
+        {
+            await Task.WhenAny(p.WaitForExitAsync(), Task.Delay(1000));
+            if (p.HasExited) break;
+
+            var elapsed = DateTime.Now - started;
+            var phase = NvidiaSetupRunning() ? "installing" : "unpacking the driver";
+            if (phase != lastPhase)
+            {
+                Log.Write($"NVIDIA installer: {phase} ({elapsed:m\\:ss} in)");
+                lastPhase = phase;
+            }
+
+            var hint = elapsed.TotalMinutes < 12
+                ? "This usually takes 5–10 minutes and the screen may go black for a moment. Don't restart yet."
+                : "This is taking longer than usual, but it's still running. Don't restart yet.";
+            status($"Installing NVIDIA {driver.Version}: {phase}… {(int)elapsed.TotalMinutes}:{elapsed.Seconds:00}  ·  {hint}");
+        }
+        Log.Write($"NVIDIA installer exited with {p.ExitCode} after {(DateTime.Now - started):m\\:ss}. Its logs are in {logDir}");
 
         TryDelete(file);
         return p.ExitCode switch
@@ -370,6 +394,24 @@ public static class GraphicsDrivers
             1 or 3010 => new InstallOutcome(true, true, "Installed – restart needed"),
             _ => new InstallOutcome(false, false, $"NVIDIA installer returned code {p.ExitCode}"),
         };
+    }
+
+    /// <summary>True once NVIDIA's unpacked setup.exe is running (the unpack step is finished).</summary>
+    private static bool NvidiaSetupRunning()
+    {
+        foreach (var proc in Process.GetProcessesByName("setup"))
+        {
+            using (proc)
+            {
+                try
+                {
+                    var path = proc.MainModule?.FileName ?? "";
+                    if (path.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                catch { }
+            }
+        }
+        return false;
     }
 
     // ───────────── AMD ─────────────

@@ -210,6 +210,16 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
+        // Don't let a driver install or uninstall get cut off by accident
+        if (AppState.IsBusy && !AppState.ShuttingDown &&
+            MessageBox.Show(this,
+                "DriverWave is still working (for example installing a driver). Closing now can leave it half-finished.\n\nClose anyway?",
+                "DriverWave", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            e.Cancel = true;
+            return;
+        }
+
         // Downloaded but not installed yet: install quietly now, without reopening
         if (UpdatePath.Length > 0 && Settings.Current.InstallUpdatesOnClose)
         {

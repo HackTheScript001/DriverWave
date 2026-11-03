@@ -36,7 +36,7 @@
                     <TextBlock Text="{Binding InstalledText}" Foreground="{StaticResource Ink}"/>
                     <TextBlock Text="{Binding LatestText}" Foreground="{StaticResource Ink}" Margin="0,2,0,0"/>
                     <TextBlock Text="{Binding Status}" Foreground="{StaticResource Blue}" Margin="0,8,0,0" TextWrapping="Wrap"/>
-                    <ProgressBar Value="{Binding Progress}" Maximum="1" Height="6" Margin="0,8,0,0" MaxWidth="420" HorizontalAlignment="Left" Width="420"
+                    <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding Indeterminate}" Maximum="1" Height="6" Margin="0,8,0,0" MaxWidth="420" HorizontalAlignment="Left" Width="420"
                                  Foreground="{StaticResource Blue}" Background="{StaticResource Line}" BorderThickness="0"
                                  Visibility="{Binding ProgressVisibility}"/>
                   </StackPanel>

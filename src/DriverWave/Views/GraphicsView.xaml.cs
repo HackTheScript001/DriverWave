@@ -41,7 +41,9 @@ public sealed class GpuItem : ObservableItem
     public string LatestText { get => _latestText; set => Set(ref _latestText, value); }
     public string ActionText { get => _actionText; set => Set(ref _actionText, value); }
     public bool CanAct { get => _canAct; set => Set(ref _canAct, value); }
+    private bool _indeterminate;
     public double Progress { get => _progress; set => Set(ref _progress, value); }
+    public bool Indeterminate { get => _indeterminate; set => Set(ref _indeterminate, value); }
     public Visibility ProgressVisibility { get => _progressVisibility; set => Set(ref _progressVisibility, value); }
 }
 
@@ -153,8 +155,14 @@ public partial class GraphicsView : UserControl
         AppState.Enter();
         item.CanAct = false;
         item.Progress = 0;
+        item.Indeterminate = false;
         item.ProgressVisibility = Visibility.Visible;
-        var progress = new Progress<double>(p => item.Progress = p);
+        // A negative value means "working, no percentage" – e.g. while NVIDIA's installer runs
+        var progress = new Progress<double>(p =>
+        {
+            item.Indeterminate = p < 0;
+            if (p >= 0) item.Progress = p;
+        });
         void Status(string s) => Dispatcher.Invoke(() => { item.Status = s; StatusText.Text = s; });
 
         try
@@ -216,6 +224,7 @@ public partial class GraphicsView : UserControl
         if (MessageBox.Show(owner!, "The new graphics driver is installed. Restart now to finish?", "Restart needed",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 5") { UseShellExecute = false, CreateNoWindow = true });
+        AppState.ShuttingDown = true;
         Application.Current.Shutdown();
     }
 }
