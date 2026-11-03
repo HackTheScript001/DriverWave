@@ -1,3 +1,6 @@
+What's new in 1.1.3
+- DriverWave has its own logo and icon. The SecondWave IT Systems credit stays at the top right.
+
 What's new in 1.1.2
 - The real SecondWave IT Systems logo in the app and as DriverWave's icon.
 
