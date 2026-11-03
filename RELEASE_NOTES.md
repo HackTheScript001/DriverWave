@@ -1,3 +1,7 @@
+What's new in 1.1.6
+- Uninstaller works like Revo Uninstaller: click Uninstall and choose whether to make a backup (restore point) first. The program's own uninstaller runs, then a window shows the registry entries and files it left behind and asks whether to delete them – Yes or No.
+- The separate "Remove leftovers only" button has gone; programs with a missing uninstaller go straight to the leftovers window.
+
 What's new in 1.1.5
 - The installer now says SecondWave IT Systems in its window title, welcome and finish pages.
 

@@ -13,7 +13,7 @@
     <StackPanel Grid.Row="0" Margin="24,18,24,8">
       <TextBlock Text="Uninstaller" Style="{StaticResource PageTitle}"/>
       <TextBlock Style="{StaticResource PageSub}"
-                 Text="Runs a program's own uninstaller, then finds the folders and registry keys it left behind so you can remove them too."/>
+                 Text="Removes a program with its own uninstaller, then shows you the files and registry entries it left behind so you can delete those too."/>
     </StackPanel>
 
     <DockPanel Grid.Row="1" Margin="24,4,24,8">
@@ -27,7 +27,7 @@
       </Border>
     </DockPanel>
 
-    <!-- Program list / leftover list share the same space -->
+    <!-- Installed programs -->
     <Grid Grid.Row="2" Margin="24,0,24,6">
       <DataGrid x:Name="ProgramGrid" IsReadOnly="True" MouseDoubleClick="OnUninstallDoubleClick">
         <DataGrid.Columns>
@@ -47,34 +47,6 @@
         </DataGrid.Columns>
       </DataGrid>
 
-      <Grid x:Name="LeftoverPanel" Visibility="Collapsed" Background="White">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <Border Style="{StaticResource Card}" Background="{StaticResource BlueSoft}" Margin="0,0,0,8">
-          <StackPanel>
-            <TextBlock x:Name="LeftoverTitle" FontWeight="SemiBold" FontSize="14"/>
-            <TextBlock Foreground="{StaticResource Grey}" TextWrapping="Wrap" Margin="0,4,0,0"
-                       Text="Untick anything you want to keep. Registry keys are backed up before they're deleted, and files go to the Recycle Bin."/>
-          </StackPanel>
-        </Border>
-        <DataGrid x:Name="LeftoverGrid" Grid.Row="1">
-          <DataGrid.Columns>
-            <DataGridTemplateColumn Width="44" CellTemplate="{StaticResource SelectCell}"/>
-            <DataGridTextColumn Header="Type" Binding="{Binding TypeText, Mode=OneWay}" Width="110" IsReadOnly="True"/>
-            <DataGridTemplateColumn Header="Location" Width="3*">
-              <DataGridTemplateColumn.CellTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Item.Display}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Item.Display}"/>
-                </DataTemplate>
-              </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
-            <DataGridTextColumn Header="Found as" Binding="{Binding Item.Reason, Mode=OneWay}" Width="*" IsReadOnly="True"/>
-            <DataGridTextColumn Header="Size" Binding="{Binding SizeText, Mode=OneWay}" Width="90" IsReadOnly="True"/>
-          </DataGrid.Columns>
-        </DataGrid>
-      </Grid>
     </Grid>
 
     <Border Grid.Row="3" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="24,12">
@@ -82,12 +54,7 @@
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
           <!-- Program list buttons -->
           <Button x:Name="RefreshButton" Content="Refresh" Style="{StaticResource GhostButton}" Click="OnRefresh"/>
-          <Button x:Name="ForceButton" Content="Remove leftovers only" Style="{StaticResource GhostButton}" Click="OnForce"
-                  ToolTip="For programs whose uninstaller is broken or missing"/>
           <Button x:Name="UninstallButton" Content="Uninstall" Style="{StaticResource DangerButton}" Click="OnUninstall"/>
-          <!-- Leftover buttons -->
-          <Button x:Name="SkipButton" Content="Keep everything" Style="{StaticResource GhostButton}" Click="OnSkipLeftovers" Visibility="Collapsed"/>
-          <Button x:Name="RemoveButton" Content="Remove selected" Style="{StaticResource DangerButton}" Click="OnRemoveLeftovers" Visibility="Collapsed"/>
         </StackPanel>
         <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
           <TextBlock x:Name="StatusText" Text="Select a program to uninstall." TextTrimming="CharacterEllipsis"/>

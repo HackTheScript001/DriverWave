@@ -23,21 +23,17 @@ public sealed class ProgramRow(InstalledProgram p)
 public sealed class LeftoverRow : ObservableItem
 {
     public required Leftover Item { get; init; }
-    public string TypeText => Item.Kind switch
-    {
-        LeftoverKind.Folder => "Folder",
-        LeftoverKind.File => "File",
-        _ => "Registry key",
-    };
     public string SizeText => SystemTools.FormatSize(Item.SizeBytes);
 }
 
+/// <summary>
+/// Uninstall the way Revo Uninstaller does it: confirm (with an optional restore point), run the program's
+/// own uninstaller, then pop up what it left behind in the registry and on disk and ask whether to delete it.
+/// </summary>
 public partial class UninstallerView : UserControl
 {
     private readonly ObservableCollection<ProgramRow> _programs = [];
-    private readonly ObservableCollection<LeftoverRow> _leftovers = [];
-    private ICollectionView? _view;
-    private InstalledProgram? _current;
+    private readonly ICollectionView _view;
     private bool _started;
     private bool _busy;
 
@@ -47,7 +43,6 @@ public partial class UninstallerView : UserControl
         _view = CollectionViewSource.GetDefaultView(_programs);
         _view.Filter = o => o is ProgramRow r && Matches(r);
         ProgramGrid.ItemsSource = _view;
-        LeftoverGrid.ItemsSource = _leftovers;
     }
 
     private Window? OwnerWindow => Window.GetWindow(this);
@@ -63,14 +58,14 @@ public partial class UninstallerView : UserControl
 
     private async Task LoadProgramsAsync()
     {
-        SetBusy(true, "Reading installed programs…");
+        var wasBusy = _busy;
+        if (!wasBusy) SetBusy(true, "Reading installed programs…");
         try
         {
             var list = await Task.Run(() => Programs.List());
             _programs.Clear();
             foreach (var p in list) _programs.Add(new ProgramRow(p));
             UpdateCount();
-            SetStatus("Select a program, then click Uninstall (or double-click it).");
         }
         catch (Exception ex)
         {
@@ -79,7 +74,7 @@ public partial class UninstallerView : UserControl
         }
         finally
         {
-            SetBusy(false);
+            if (!wasBusy) SetBusy(false);
         }
     }
 
@@ -94,13 +89,13 @@ public partial class UninstallerView : UserControl
     private void OnSearch(object sender, TextChangedEventArgs e)
     {
         SearchHint.Visibility = SearchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        _view?.Refresh();
+        _view.Refresh();
         UpdateCount();
     }
 
     private void UpdateCount()
     {
-        var shown = _view?.Cast<object>().Count() ?? 0;
+        var shown = _view.Cast<object>().Count();
         CountText.Text = shown == _programs.Count ? $"{_programs.Count} programs" : $"{shown} of {_programs.Count} programs";
     }
 
@@ -113,104 +108,69 @@ public partial class UninstallerView : UserControl
         if (_busy || ProgramGrid.SelectedItem is not ProgramRow row) return;
         var p = row.Program;
 
-        if (MessageBox.Show(OwnerWindow!, $"Uninstall {p.Name}?\n\nIts own uninstaller will open first. Afterwards DriverWave will look for anything it left behind.",
-                "Uninstall", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        // 1. Confirm, with the choice of a backup first
+        var confirm = new UninstallConfirmWindow(OwnerWindow, p);
+        if (confirm.ShowDialog() != true) return;
 
-        SetBusy(true, $"Creating a restore point before removing {p.Name}…");
+        SetBusy(true);
         try
         {
-            await Task.Run(() => RestorePoint.TryCreate($"DriverWave – uninstall {p.Name}"));
+            if (confirm.MakeBackup)
+            {
+                SetStatus($"Making a restore point before removing {p.Name}…");
+                await Task.Run(() => RestorePoint.TryCreate($"DriverWave – uninstall {p.Name}"));
+            }
+
+            // 2. The program's own uninstaller
             SetStatus($"Running {p.Name}'s uninstaller – follow its window…");
             var code = await Programs.RunUninstallerAsync(p);
 
             if (code == -1)
-                SetStatus("The uninstaller is missing. Scanning for leftovers instead…");
-            else if (Programs.StillInstalled(p) && code != 0)
             {
-                SetStatus($"The uninstaller was cancelled or failed (code {code}).");
-                if (MessageBox.Show(OwnerWindow!, $"{p.Name} still looks installed. Scan for leftovers anyway?", "Uninstall",
-                        MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                Log.Write($"{p.Name}'s uninstaller is missing – looking for what's left instead");
+            }
+            else if (code != 0 && Programs.StillInstalled(p))
+            {
+                SetStatus($"{p.Name}'s uninstaller was cancelled or didn't finish (code {code}).");
+                if (MessageBox.Show(OwnerWindow!, $"{p.Name} still looks installed – its uninstaller may have been cancelled.\n\nLook for leftovers anyway?",
+                        "Uninstall", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                     return;
             }
 
-            await ScanLeftoversAsync(p);
+            // 3. What it left behind
+            SetStatus($"Looking for anything {p.Name} left behind…");
+            var leftovers = await Task.Run(() => Programs.FindLeftovers(p));
+
+            if (leftovers.Count == 0)
+            {
+                SetStatus($"{p.Name} was removed cleanly – nothing left behind.");
+                MessageBox.Show(OwnerWindow!, $"{p.Name} has been removed. Nothing was left behind.", "Uninstall",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                // 4. Ask: delete these? yes / no
+                var window = new LeftoversWindow(OwnerWindow, p.Name, leftovers);
+                if (window.ShowDialog() == true && window.Chosen.Count > 0)
+                {
+                    SetStatus($"Deleting {window.Chosen.Count} leftover item(s)…");
+                    var (removed, failed, backup) = await Programs.RemoveLeftoversAsync(window.Chosen, $"uninstall {p.Name}");
+                    Log.Write($"Registry backup: {backup}");
+                    SetStatus($"{p.Name} removed, plus {removed} leftover item(s)" +
+                              (failed > 0 ? $". {failed} couldn't be deleted (see Details)." : "."));
+                }
+                else
+                {
+                    SetStatus($"{p.Name} removed. Leftovers were kept.");
+                }
+            }
+
+            await LoadProgramsAsync();
         }
         catch (Exception ex)
         {
             Log.Write($"Uninstall failed: {ex}");
             SetStatus($"Uninstall failed: {ex.Message}");
-        }
-        finally
-        {
-            SetBusy(false);
-        }
-    }
-
-    private async void OnForce(object sender, RoutedEventArgs e)
-    {
-        if (_busy || ProgramGrid.SelectedItem is not ProgramRow row) return;
-        if (MessageBox.Show(OwnerWindow!,
-                $"Skip {row.Name}'s uninstaller and just find its files and registry keys?\n\nUse this when the normal uninstaller is broken or missing.",
-                "Remove leftovers", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-        SetBusy(true, "Looking for leftovers…");
-        try { await ScanLeftoversAsync(row.Program); }
-        finally { SetBusy(false); }
-    }
-
-    private async Task ScanLeftoversAsync(InstalledProgram p)
-    {
-        SetStatus($"Looking for anything {p.Name} left behind…");
-        var items = await Task.Run(() => Programs.FindLeftovers(p));
-        _current = p;
-        _leftovers.Clear();
-        foreach (var i in items) _leftovers.Add(new LeftoverRow { Item = i, Selected = true });
-
-        if (_leftovers.Count == 0)
-        {
-            SetStatus($"{p.Name} was removed cleanly – nothing left behind.");
-            await LoadProgramsAsync();
-            return;
-        }
-
-        LeftoverTitle.Text = $"{p.Name} left {_leftovers.Count} item(s) behind";
-        ShowLeftovers(true);
-        SetStatus("Review what was found, then click Remove selected.");
-    }
-
-    private void ShowLeftovers(bool show)
-    {
-        LeftoverPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        var list = show ? Visibility.Collapsed : Visibility.Visible;
-        RefreshButton.Visibility = ForceButton.Visibility = UninstallButton.Visibility = list;
-        SkipButton.Visibility = RemoveButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private async void OnSkipLeftovers(object sender, RoutedEventArgs e)
-    {
-        ShowLeftovers(false);
-        await LoadProgramsAsync();
-    }
-
-    private async void OnRemoveLeftovers(object sender, RoutedEventArgs e)
-    {
-        var chosen = _leftovers.Where(l => l.Selected).Select(l => l.Item).ToList();
-        if (_busy || chosen.Count == 0 || _current == null) return;
-
-        SetBusy(true, $"Removing {chosen.Count} item(s)…");
-        try
-        {
-            var (removed, failed, backup) = await Programs.RemoveLeftoversAsync(chosen, $"uninstall {_current.Name}");
-            SetStatus($"Removed {removed} item(s)" + (failed > 0 ? $", {failed} couldn't be removed (see Details)" : "") +
-                      ". Registry backup saved.");
-            Log.Write($"Registry backup: {backup}");
-            ShowLeftovers(false);
-            await LoadProgramsAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Write($"Leftover removal failed: {ex}");
-            SetStatus($"Failed: {ex.Message}");
         }
         finally
         {
@@ -226,8 +186,7 @@ public partial class UninstallerView : UserControl
         if (!busy && _busy) AppState.Exit();
         _busy = busy;
         BusyBar.Visibility = busy ? Visibility.Visible : Visibility.Hidden;
-        RefreshButton.IsEnabled = ForceButton.IsEnabled = UninstallButton.IsEnabled = !busy;
-        SkipButton.IsEnabled = RemoveButton.IsEnabled = !busy;
+        RefreshButton.IsEnabled = UninstallButton.IsEnabled = !busy;
         if (status != null) SetStatus(status);
     }
 
