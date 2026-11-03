@@ -1,0 +1,27 @@
+<Window x:Class="DriverWave.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Updating DriverWave" Width="580" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="White" FontFamily="Segoe UI" FontSize="13"
+        Icon="Assets/DriverWave.ico" ShowInTaskbar="False">
+  <StackPanel Margin="24,20,24,18">
+    <TextBlock x:Name="HeadText" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Ink}"/>
+    <TextBlock x:Name="StatusText" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{StaticResource Ink}"/>
+    <ProgressBar x:Name="Bar" Height="8" Margin="0,10,0,0" Maximum="100"
+                 Foreground="{StaticResource Blue}" Background="{StaticResource Line}" BorderThickness="0"/>
+
+    <StackPanel x:Name="NotesPanel" Margin="0,16,0,0">
+      <TextBlock Text="What's new" FontWeight="SemiBold" Foreground="{StaticResource Ink}"/>
+      <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6" Margin="0,6,0,0" Background="{StaticResource Panel}">
+        <ScrollViewer MinHeight="140" MaxHeight="300" VerticalScrollBarVisibility="Auto" Padding="12,10">
+          <TextBlock x:Name="NotesText" TextWrapping="Wrap" Foreground="{StaticResource Ink}" LineHeight="20"/>
+        </ScrollViewer>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+      <Button x:Name="LaterButton" Content="Later" Style="{StaticResource GhostButton}" Click="OnLater"/>
+      <Button x:Name="RetryButton" Content="Try again" Style="{StaticResource PrimaryButton}" Click="OnRetry" Visibility="Collapsed"/>
+    </StackPanel>
+  </StackPanel>
+</Window>

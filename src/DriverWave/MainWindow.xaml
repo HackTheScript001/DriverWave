@@ -4,7 +4,7 @@
         Title="DriverWave – SecondWave IT Systems" Width="1180" Height="760" MinWidth="960" MinHeight="580"
         WindowStartupLocation="CenterScreen" Background="White"
         Icon="Assets/DriverWave.ico" FontFamily="Segoe UI" FontSize="13"
-        Loaded="OnLoaded">
+        Loaded="OnLoaded" Closing="OnClosing">
 
   <Grid>
     <Grid.RowDefinitions>
@@ -60,8 +60,11 @@
       <!-- Sidebar -->
       <Border Grid.Column="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0" Padding="12,16">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Bottom" Margin="8,0">
-            <TextBlock x:Name="UpdateStatus" Foreground="{StaticResource Grey}" FontSize="11.5" TextWrapping="Wrap"/>
+          <StackPanel DockPanel.Dock="Bottom">
+            <Button x:Name="SidebarUpdateButton" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Padding="10,8"
+                    HorizontalAlignment="Stretch" Click="OnUpdateApp" Visibility="Collapsed"/>
+            <RadioButton x:Name="SettingsNav" Style="{StaticResource NavItem}" GroupName="nav" Tag="settings" Content="Settings" Checked="OnNav"/>
+            <TextBlock x:Name="UpdateStatus" Foreground="{StaticResource Grey}" FontSize="11.5" TextWrapping="Wrap" Margin="12,6,0,0"/>
           </StackPanel>
           <StackPanel>
             <TextBlock Text="DRIVERS" Foreground="{StaticResource Grey}" FontSize="11" FontWeight="SemiBold" Margin="12,0,0,6"/>

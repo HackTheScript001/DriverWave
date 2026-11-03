@@ -65,8 +65,15 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: deskto
 [Run]
 ; Normal install: offer to launch at the end
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent shellexec
-; Silent in-app update: relaunch automatically
-Filename: "{app}\{#MyAppExe}"; Flags: nowait shellexec; Check: WizardSilent
+; In-app updates run this installer silently with /RELAUNCH=1 so DriverWave reopens by itself afterwards
+; (/RELAUNCH=0 when it installs on close). Older versions pass nothing, so default to reopening.
+Filename: "{app}\{#MyAppExe}"; Flags: nowait shellexec; Check: RelaunchAfterUpdate
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\OfflineDrivers"
+
+[Code]
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:RELAUNCH|1}') = '1');
+end;

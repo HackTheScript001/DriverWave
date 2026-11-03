@@ -1,27 +1,43 @@
 name: Build and release
 
-# Every push to main builds a new installer and publishes it to GitHub Releases.
-# Version = 1.0.<run number>, so each build is newer than the last and the in-app updater picks it up.
+# Every push to main builds DriverWave. The first build of a new version becomes the release:
+# the installer plus a .sha256 checksum (the in-app updater only installs a download that matches it),
+# with the notes from RELEASE_NOTES.md.
+#
+# To release an update: bump <Version> in src/DriverWave/DriverWave.csproj, add a
+# "What's new in x.y.z" section to the top of RELEASE_NOTES.md, push.
 on:
   push:
     branches: [main]
     paths-ignore:
-      - '**.md'
+      - 'README.md'
+      - 'OfflineDrivers/README.md'
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      VERSION: 1.0.${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Select-Xml -Path src/DriverWave/DriverWave.csproj -XPath '//Version').Node.InnerText.Trim()
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Version '$v' in DriverWave.csproj must look like 1.2.3" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "DriverWave $v"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -32,25 +48,41 @@ jobs:
           dotnet publish src/DriverWave/DriverWave.csproj
           -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true
-          -p:Version=${{ env.VERSION }}
           -o publish
 
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
       - name: Build installer
-        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DMyAppVersion=${{ env.VERSION }} installer\DriverWave.iss'
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DMyAppVersion=${{ steps.ver.outputs.version }} installer\DriverWave.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $exe = Get-Item "output\DriverWave-${{ steps.ver.outputs.version }}-Setup.exe"
+          "$((Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower())  $($exe.Name)" |
+            Set-Content -NoNewline -Encoding ascii "$($exe.FullName).sha256"
+          Get-Content "$($exe.FullName).sha256"
+
+      - name: Keep the build
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ env.VERSION }}
-          name: DriverWave ${{ env.VERSION }}
-          prerelease: false
-          generate_release_notes: true
-          files: output/DriverWave-${{ env.VERSION }}-Setup.exe
-          body: |
-            Download **DriverWave-${{ env.VERSION }}-Setup.exe** below and run it.
-            Windows will ask for admin rights – drivers can't be installed without them.
+          name: DriverWave-${{ steps.ver.outputs.version }}
+          path: output/*
 
-            DriverWave is in beta. Problems or ideas? Open an issue.
+      - name: Publish release (first build of a new version only)
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.ver.outputs.version }}"
+          if gh release view "v$v" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v$v already exists - nothing to publish. Bump the version to release an update."; exit 0
+          fi
+          gh release create "v$v" "output/DriverWave-$v-Setup.exe" "output/DriverWave-$v-Setup.exe.sha256" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "DriverWave $v" --notes-file RELEASE_NOTES.md
+          echo "Published https://github.com/$GITHUB_REPOSITORY/releases/tag/v$v"

@@ -16,8 +16,8 @@
     <Description>Finds and installs missing Windows drivers after a fresh install.</Description>
     <Copyright>© SecondWave IT Systems. DriverWave is a SecondWave IT Systems product.</Copyright>
 
-    <!-- CI overrides this with -p:Version=1.0.<run number> -->
-    <Version>1.0.0</Version>
+    <!-- To release an update: bump this, add a "What's new in x.y.z" section to RELEASE_NOTES.md, push -->
+    <Version>1.1.0</Version>
 
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\DriverWave.ico</ApplicationIcon>
