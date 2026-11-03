@@ -78,7 +78,7 @@
 
     <!-- Results -->
     <Grid Grid.Row="4" Margin="24,10,24,6">
-      <DataGrid x:Name="ResultsGrid"AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+      <DataGrid x:Name="ResultsGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                 HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource Line}"
                 BorderBrush="{StaticResource Line}" BorderThickness="1" Background="White" RowBackground="White"
                 SelectionMode="Single" SelectionUnit="FullRow" IsReadOnly="False" RowHeight="46"
