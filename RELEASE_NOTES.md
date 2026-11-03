@@ -1,3 +1,6 @@
+What's new in 1.1.2
+- The real SecondWave IT Systems logo in the app and as DriverWave's icon.
+
 What's new in 1.1.1
 - Graphics card: NVIDIA drivers are now found by the card's hardware ID, the same way NVIDIA's own app does it, so DriverWave downloads and installs the right driver itself – including cards like the GTX 1060 6GB that the name search missed, and cards that don't have a driver yet.
 
